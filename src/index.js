@@ -38,7 +38,7 @@ store.subscribe(render);
 
 document.body.addEventListener("keypress", () => {
   action = {type: ""};
-  switch(input){ //TODO
+  switch(event.keyCode){ //TODO
     case 37:
     action.type = "MOVE_LEFT";
     break;

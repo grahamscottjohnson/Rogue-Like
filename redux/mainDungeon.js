@@ -32,11 +32,16 @@ import { createDungeon } from "./walls.js";
 
 export function dungeonReducer(state, action){
   if (state === undefined){
-    return initializeState(player, createDungeon(1)); // this creates a dependency between initializeState and createDungeon
+    return initializeState({
+      weapon: "Stick";
+      health: 100;
+      level: 1;
+      XP: 0;
+    }, createDungeon(1)); // this creates a dependency between initializeState and createDungeon
   }
   switch(action.type){
     case: "MOVE_LEFT":
-      return movePlayerTo(state, state.player.x - 1, state.player.y); //movePlayerTo does work to change state
+      return movePlayerTo(state, state.player.x - 1, state.player.y); //movePlayerTo does logic to change state
     case: "MOVE_UP":
       return movePlayerTo(state, state.player.x, state.player.y + 1); //movePlayerTo does work to change state
     case: "MOVE_RIGHT":
@@ -105,6 +110,9 @@ function playerDamage(weapon, level){
   //calculate damage
   let damage = 0;
   switch(weapon){
+    case "Stick":
+      damage = 1;
+      break;
     case "Dagger":
       damage = 10;
       break;
