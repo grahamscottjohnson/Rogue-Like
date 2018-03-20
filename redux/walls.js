@@ -37,12 +37,108 @@
   Dungeon complete, convert it into something the reducer/player.js file can use
 */
 
-export function createDungeon(){
+/*
+  Populating a dungeon with items
+
+  Dungeon needs to know what level the dungeon is
+    Create a min/max # of enemies based on dungeon level
+      put them randomly into the Rooms
+      avoid collisions
+    Spawn Exit and weapon first, then enemies then health
+*/
+
+export function createDungeon(level){
+  //TODO if level 4, create boss, don't create exit
+  let walls = createWalls();
+  let collisions = {};
+  let temp = populateExit(walls.rooms, collisions);
+  const exit = temp[0];
+  collisions = temp[1];
+  temp = placePlayer(walls.rooms, collisions);
+  const player = temp[0];
+  collisions = temp[1];
+  temp = populateWeapon(walls.rooms, collisions, level);
+  const weapon = temp[0];
+  collisions = temp[1];
+  temp = populateHealth(walls.rooms, collisions);
+  const health = temp[0];
+  collisions = temp[1];
+  temp = populateEnemies(walls.rooms, collisions, level);
+  const enemies = temp[0];
+  //convert walls into something the reducer/player.js file can use
+  walls = convertDungeon(walls);
+  return {enemies, health, weapon, exit, walls, level};
+}
+function placePlayer(){
+  const roomNum = Math.floor(Math.random() * rooms.length);
+  const position = generatePosition(rooms[roomNum], collisions);
+  collisions[position.id] = true;
+  return [position, collisions];
+}
+function populateHealth(rooms, collisions){ // collisions is an object of keys that just have true if there is an item there
+  let health = {};
+  let numHealth = 3 * Math.celing(Math.random()) + 4;
+  for (let i = 0; i < numHealth; i += 1){
+    const roomNum = Math.floor(Math.random() * rooms.length);
+    const position = generatePosition(rooms[roomNum], collisions);
+    collisions[position.id] = true;
+    health[postion] = Object.assign(...position, health: 10);
+  }
+  return [health collisions]; // need to return collisions or deal with it somehow
+}
+function populateEnemies(rooms, collisions, level){
+  let enemies = {};
+  const numEnemies = 3 * Math.celing(Math.random()) + 3;
+  for (let i = 0; i < numEnemies; i += 1){
+    const roomNum = Math.floor(Math.random() * rooms.length);
+    const position = generatePosition(rooms[roomNum], collisions);
+    collisions[position.id] = true;
+    enemies[postion] = Object.assign(...position, health: level * 20, damage: level * 10, XP: level * 10);
+  }
+  return [enemies, collisions];
+}
+function populateWeapon(rooms, collisions, level){
+  const roomNum = Math.floor(Math.random() * rooms.length);
+  const position = generatePosition(rooms[roomNum], collisions);
+  collisions[position.id] = true;
+  let name = "Stick";
+  switch(level){
+    case 1:
+      name = "Dagger";
+      break;
+    case 2:
+      name = "Sword";
+      break;
+    case 3:
+      name = "Long Sword";
+      break;
+    case 4:
+      name = "Hero's Sword";
+      break;
+  }
+  return [[position.x, position.y, name], collisions];
+}
+function populateExit(rooms, collisions){
+  const roomNum = Math.floor(Math.random() * rooms.length);
+  const position = generatePosition(rooms[roomNum], collisions);
+  collisions[position.id] = true;
+  return [[position.x, position.y], collisions];
+}
+function generatePosition(room, collisions){
+  for(let i = 0; i < 4; i += 1){
+    const x = Math.floor((room[0][1] - room[0][0] + 1) * Math.random()) + room[0][0];
+    const y = Math.floor((room[1][1] - room[1][0] + 1) * Math.random()) + room[1][0];
+    const id = `_${x}_${y}`;
+    if (!collisions[id] || i === 4) {
+      return {x, y, id};
+    }
+  }
+}
+function createWalls(){
   dungeon = createBaseRoom(0, Math.ceiling(6*Math.random()) + 3, 0, Math.ceiling(6*Math.random()) + 3);
   let numRooms = Math.ceiling(6*Math.random()) + 6;
   dungeon = appendNewRooms(dungeon, numRooms - 1);
-  //convert it into something the reducer/player.js file can use
-  return convertDungeon(dungeon);
+  return dungeon;
 }
 function convertDungeon(dungeon){
   let doors = dungeon.doors.map( (door) => {
@@ -59,7 +155,7 @@ function createBaseRoom(startX, endX, startY, endY){
   return result;
 }
 function addNewDoors(startX, endX, startY, endY){
-  //TODO args[4] flags what direction you can't make a door
+  //TODO args[4] flags what direction you can't make a door -- I think this is maybe fine
   let result = [];
   let x = endX - startX;
   let y = endY - startY;

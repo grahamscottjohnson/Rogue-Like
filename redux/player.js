@@ -5,7 +5,8 @@
   health:
   level:
   walls:
-*/
+
+//MOVED TO MAIN DUNGEON. JS
 
 export const player = (state, action) => {
 
@@ -20,3 +21,4 @@ function isInBounds(walls, x, y){ //this approach is inentionally trying to not 
     return x > wall[0][0] && x < wall[0][1] && y > wall [1][0] && y < wall[1][1];
   })
 }
+*/

@@ -28,8 +28,12 @@
   exit: [x,y]
   walls: [], //ex: [[[x1, x2], [y1, y2]], ...]
 */
+import { createDungeon } from "./walls.js";
 
-function dungeonReducer(state, action){
+export function dungeonReducer(state, action){
+  if (state === undefined){
+    return initializeState(player, createDungeon(1)); // this creates a dependency between initializeState and createDungeon
+  }
   switch(action.type){
     case: "MOVE_LEFT":
       return movePlayerTo(state, state.player.x - 1, state.player.y); //movePlayerTo does work to change state
@@ -39,6 +43,8 @@ function dungeonReducer(state, action){
       return movePlayerTo(state, state.player.x + 1, state.player.y); //movePlayerTo does work to change state
     case: "MOVE_DOWN":
       return movePlayerTo(state, state.player.x, state.player.y - 1); //movePlayerTo does work to change state
+    default:
+      return state;
     //I don't think I need these anymore since i wrote normal methods that do this:
     // case: "PICK_UP_HEALTH" //needs health key
     //   return pickUpHealth(state, action.key);
@@ -53,6 +59,13 @@ function dungeonReducer(state, action){
     // case: "WEAPON_UP":
     //   return (...state, (power: action.power));
   }
+}
+function initializeState(player, dungeon){
+  player.x = dungeon.player.x;
+  player.y = dungeon.player.y;
+  //player.id = dungeon.player.id;
+  return Object.assign({}, ...dungeon, player);
+  //return Object.assign({}, player, ...dungeon); would the dungeon.player overwrite all of player's properties or just x and y?
 }
 function gainXP(player, XP){
   player.XP += XP;
@@ -92,16 +105,16 @@ function playerDamage(weapon, level){
   //calculate damage
   let damage = 0;
   switch(weapon){
-    case "1": //TODO give weapon name and properties
+    case "Dagger":
       damage = 10;
       break;
-    case "2":
+    case "Sword":
       damage = 20;
       break;
-    case "3":
+    case "Long Sword":
       damage = 30;
       break;
-    case "4":
+    case "Hero's Sword": // TODO check if apostrophe creates error
       damage = 40;
       break;
   }
@@ -134,7 +147,7 @@ function itemAt(state, key){
   }
   return null;
 }
-function allowMovement(state, x, y){ //should only be called in reponse to a key input
+function movePlayerTo(state, x, y){ //should only be called in reponse to a key input
   //returns if player should move
   if (!isInBounds(state.walls, x, y){
     return state;
@@ -155,8 +168,7 @@ function allowMovement(state, x, y){ //should only be called in reponse to a key
       newState = pickUpWeapon(state, key);
       return {...newState, player};
     case "EXIT":
-      //TODO change level, return it
-      return state;
+      return initializeState(state.player, createDungeon(state.level + 1));;
     default:
       let player = {...state.player, {x, y}};
       return {...state, player};

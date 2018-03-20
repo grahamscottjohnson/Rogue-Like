@@ -1,7 +1,7 @@
 const path = require("path");
 
-module.exports{
-  entry: "../src/index.js",
+module.exports = {
+  entry: "./src/index.js",
   output: {
     path: path.resolve(__dirname, "dist"),
     filename: "bundle.js";
@@ -10,7 +10,8 @@ module.exports{
     rules: {
       test: /\.js$/,
       use: {
-        loaders: ["babel-loader"],
+        loader: "babel-loader",
+        exclude: /node_modules/,
         options: {
           presets: ["env", "react"]
         }
