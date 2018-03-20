@@ -32,11 +32,11 @@ import { App } from "../../Components/App.js";
 
 const store = createStore(dungeonReducer);
 const render = () => {
-  ReactDOM.render(<App />, document.getElementById("root"));
+  ReactDOM.render(<App state = {store.getState()}/>, document.getElementById("root"));
 }
 store.subscribe(render);
 
-document.body.addEventListener("keypress", () => {
+window.addEventListener("keydown", (event) => {
   action = {type: ""};
   switch(event.keyCode){ //TODO
     case 37:
@@ -55,4 +55,4 @@ document.body.addEventListener("keypress", () => {
     return null;
   }
   store.dispatch(action);
-})
+});

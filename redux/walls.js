@@ -156,31 +156,47 @@ function createBaseRoom(startX, endX, startY, endY){
 }
 function addNewDoors(startX, endX, startY, endY){
   //TODO args[4] flags what direction you can't make a door -- I think this is maybe fine
+  let badDoors = []; //badDoors will be the opposite side. Imagine you have just entered from this badDoor, and now you don't want to go back
+  if (arguments[4]){
+    badDoors.push(arguments[4]);
+  }
   let result = [];
   let x = endX - startX;
   let y = endY - startY;
   let perim = 2 * x + 2 * y;
-  let numDoors = Math.ceiling(2 * Math.random()); // need a way to make it a dead end
+  let numDoors = Math.ceiling(2 * Math.random());
   for(let i = 0; i < numDoors; i += 1){
     let position = Math.floor(perim * Math.random());
     if (position < x){
-      if (arguments[4] !== "north"){
+      if (!badDoors.some( (val) => {
+        return val === "north";
+      })){
         result.push([[startX + position, startX + position + 1], [startY - 1, startY], "south"]);
+        badDoors.push("north");
       }
     }
     else if (position < 2 * x) {
-      if (arguments[4] !== "south"){
+      if (!badDoors.some( (val) => {
+        return val === "south"
+      })){
         result.push([[startX + position - x, startX + position - x + 1], [endY, endY + 1], "north"]);
+        badDoors.push("south");
       }
     }
     else if (position < 2 * x + y) {
-      if (arguments[4] !== "west"){
+      if (!badDoors.some( (val) => {
+        return val === "west"
+      })){
         result.push([[endX, endX + 1], [startY + position - 2 * x, startY  + position - 2 * x + 1], "east"]);
+        badDoors.push("west");
       }
     }
     else{
-      if (arguments[4] !== "east"){
+      if (!badDoors.some( (val) => {
+        return val === "east"
+      })){
         result.push([[startX - 1, startX], [startY + position - 2 * x - y, startY  + position - 2 * x - y + 1], "west"]);
+        badDoors.push("east");
       }
     }
   }

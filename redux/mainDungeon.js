@@ -27,6 +27,7 @@
   weapon: [x,y,"name"]
   exit: [x,y]
   walls: [], //ex: [[[x1, x2], [y1, y2]], ...]
+  level: number
 */
 import { createDungeon } from "./walls.js";
 
