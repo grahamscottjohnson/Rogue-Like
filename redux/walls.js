@@ -50,6 +50,7 @@
 export function createDungeon(level){
   //TODO if level 4, create boss, don't create exit
   let walls = createWalls();
+  console.log("In createDungeon, walls succesful, value is:", walls);
   let collisions = {};
   let temp = populateExit(walls.rooms, collisions);
   const exit = temp[0];
@@ -67,9 +68,9 @@ export function createDungeon(level){
   const enemies = temp[0];
   //convert walls into something the reducer/player.js file can use
   walls = convertDungeon(walls);
-  return {enemies, health, weapon, exit, walls, level};
+  return {player, enemies, health, weapon, exit, walls, level};
 }
-function placePlayer(){
+function placePlayer(rooms, collisions){
   const roomNum = Math.floor(Math.random() * rooms.length);
   const position = generatePosition(rooms[roomNum], collisions);
   collisions[position.id] = true;
@@ -77,23 +78,24 @@ function placePlayer(){
 }
 function populateHealth(rooms, collisions){ // collisions is an object of keys that just have true if there is an item there
   let health = {};
-  let numHealth = 3 * Math.celing(Math.random()) + 4;
+  let numHealth = 3 * Math.ceil(Math.random()) + 4;
   for (let i = 0; i < numHealth; i += 1){
     const roomNum = Math.floor(Math.random() * rooms.length);
     const position = generatePosition(rooms[roomNum], collisions);
     collisions[position.id] = true;
-    health[postion] = Object.assign(...position, health: 10);
+    health[position.id] = Object.assign(position, health: 10);
+    console.log("populateHealth: health object:", health[position.id]);
   }
-  return [health collisions]; // need to return collisions or deal with it somehow
+  return [health, collisions]; // need to return collisions or deal with it somehow
 }
 function populateEnemies(rooms, collisions, level){
   let enemies = {};
-  const numEnemies = 3 * Math.celing(Math.random()) + 3;
+  const numEnemies = 3 * Math.ceil(Math.random()) + 3;
   for (let i = 0; i < numEnemies; i += 1){
     const roomNum = Math.floor(Math.random() * rooms.length);
     const position = generatePosition(rooms[roomNum], collisions);
     collisions[position.id] = true;
-    enemies[postion] = Object.assign(...position, health: level * 20, damage: level * 10, XP: level * 10);
+    enemies[position.id] = Object.assign(position, {health: level * 20, damage: level * 10, XP: level * 10});
   }
   return [enemies, collisions];
 }
@@ -135,16 +137,20 @@ function generatePosition(room, collisions){
   }
 }
 function createWalls(){
-  dungeon = createBaseRoom(0, Math.ceiling(6*Math.random()) + 3, 0, Math.ceiling(6*Math.random()) + 3);
-  let numRooms = Math.ceiling(6*Math.random()) + 6;
+  dungeon = createBaseRoom(0, Math.ceil(6*Math.random()) + 3, 0, Math.ceil(6*Math.random()) + 3);
+  let numRooms = Math.ceil(6*Math.random()) + 6;
   dungeon = appendNewRooms(dungeon, numRooms - 1);
   return dungeon;
 }
 function convertDungeon(dungeon){
   let doors = dungeon.doors.map( (door) => {
-    return door.splice(2, 1);
-  })
-  return [...dungeon.rooms, ..doors];
+    let output = [door[0], door[1]];
+    //console.log("In convertDungeon, door input and output are:", door, output);
+    return output;
+  });
+  let result = dungeon.rooms.concat(doors);
+  //console.log("In convertDungeon, input dungeon and result dungeon are:", dungeon, result);
+  return result;
 }
 function createBaseRoom(startX, endX, startY, endY){
   let result = {
@@ -154,8 +160,24 @@ function createBaseRoom(startX, endX, startY, endY){
   }
   return result;
 }
+/*
+function filterDirection(arr, direction){
+  return arr.filter( (val) => {
+    return val !== direction;
+  })
+}
 function addNewDoors(startX, endX, startY, endY){
-  //TODO args[4] flags what direction you can't make a door -- I think this is maybe fine
+  // these parameters are the dimenions of the room
+  // args[4] flags what direction you can't make a door
+  //badDoors will be the opposite side. Imagine you have just entered from this badDoor, and now you don't want to go back
+  let goodDoors = ["north", "east", "south," "west"];
+  if (arguments[4]){
+    goodDoors = filterDirection(goodDoors, arguments[4]);
+  }
+*/
+function addNewDoors(startX, endX, startY, endY){
+  // these parameters are the dimenions of the room
+  // args[4] flags what direction you can't make a door
   let badDoors = []; //badDoors will be the opposite side. Imagine you have just entered from this badDoor, and now you don't want to go back
   if (arguments[4]){
     badDoors.push(arguments[4]);
@@ -164,7 +186,7 @@ function addNewDoors(startX, endX, startY, endY){
   let x = endX - startX;
   let y = endY - startY;
   let perim = 2 * x + 2 * y;
-  let numDoors = Math.ceiling(2 * Math.random());
+  let numDoors = Math.ceil(2 * Math.random());
   for(let i = 0; i < numDoors; i += 1){
     let position = Math.floor(perim * Math.random());
     if (position < x){
@@ -203,24 +225,28 @@ function addNewDoors(startX, endX, startY, endY){
   return result;
 }
 function addNewRoom(startX, endX, startY, endY){
+  //console.log("In addNewRoom, arguments are: ", arguments);
   return [[startX, endX], [startY, endY]]
 }
 function appendNewRooms(dungeon, numNewRooms){ // mutates dungeon
   let newDoors = [];
   if (!dungeon.emptyDoors || dungeon.emptyDoors.length === 0){ // we expect emptyDoors to be not empty, but if it is, lets handle it here;
     console.log("Error: emptyDoors should not be empty in appendNewRooms in walls.js. dungeon was: ", dungeon);
-    return dungeon;
+    delete dungeon.emptyDoors;
+    return dungeon; //TODO FIX ERROR
   }
   dungeon.emptyDoors.forEach( (door, index) => {
     if (numNewRooms !== 0){
-      let result = addAdjoingRoom(door); // new empty room connected to this door
+      //console.log("in appendNewRooms, door is: ", door);
+      let result = addAdjoiningRoom(door); // new empty room connected to this door
       if (dungeon.rooms.some( (room) => {
+        //console.log("In appendNewRooms, room and result are", room, result);
         return isOverlapping(room, result);
       })){
         // don't add new doors to this weirdly overlapping room, but the room itself is probably fine.
       }
       else{
-        newDoors.push(addNewDoors(result[0][0], result[0][1], result[1][0], result[1][1]), door[2]);
+        newDoors.push(...addNewDoors(result[0][0], result[0][1], result[1][0], result[1][1], door[2]));
       }
       //once room is all good, add room and door to dungeon and reduce counter
       dungeon.rooms.push(result);
@@ -231,6 +257,7 @@ function appendNewRooms(dungeon, numNewRooms){ // mutates dungeon
   //check numNewRooms
   if (numNewRooms === 0){
     delete dungeon.emptyDoors;
+    console.log("dungeon creation succesful, dungeon is:", dungeon);
     return dungeon;
   }
   else{
@@ -239,9 +266,9 @@ function appendNewRooms(dungeon, numNewRooms){ // mutates dungeon
   }
 }
 function addAdjoiningRoom(door){
-  const xWidth = Math.ceiling(6*Math.random()) + 3;
-  const yWidth = Math.ceiling(6*Math.random()) + 3;
-  const offset = Math.ceiling(6*Math.random()) + 3;
+  const xWidth = Math.ceil(6*Math.random()) + 3;
+  const yWidth = Math.ceil(6*Math.random()) + 3;
+  const offset = Math.ceil(6*Math.random()) + 3;
   switch(door[2]){
     case "north":
       return addNewRoom(door[0][0] - offset, door[0][0] + xWidth - offset, door[1][1], door[1][1] + yWidth);
@@ -251,6 +278,9 @@ function addAdjoiningRoom(door){
       return addNewRoom(door[0][1], door[0][1] + xWidth, door[1][0] - offset, door[1][0] + yWidth - offset);
     case "west":
       return addNewRoom(door[0][0] - xWidth, door[0][0], door[1][0] - offset, door[1][0] + yWidth - offset);
+    default:
+      //console.log("Error: in addAdjoiningRoom: door[2] was not recognized. Seed was", xWidth, yWidth, offset, door);
+      return undefined;
   }
 }
 function isOverlapping(a, b){ //rooms
@@ -262,7 +292,7 @@ function isOverlapping(a, b){ //rooms
 //   if (i === 0){
 //     return dungeon;
 //   }
-//   let direction = Math.ceiling(4*Math.random());
+//   let direction = Math.ceil(4*Math.random());
 //   switch(direction){
 //
 //   }

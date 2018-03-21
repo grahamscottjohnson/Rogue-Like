@@ -13,6 +13,13 @@ body{
   height: 750px;
   position: relative;
 }
+.center{
+  width: 0;
+  height: 0;
+  position: absolute;
+  top: 500px;
+  left: 375px;
+}
 .player, .health, .enemy, .weapon, .exit{
   width: 10px;
   height: 10px;
@@ -22,6 +29,7 @@ body{
 }
 .tile{
   background-color: #ccc;
+  z-index: -1;
 }
 .health{
   background-color: green;

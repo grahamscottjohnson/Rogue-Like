@@ -33,22 +33,20 @@ import { createDungeon } from "./walls.js";
 
 export function dungeonReducer(state, action){
   if (state === undefined){
-    return initializeState({
-      weapon: "Stick";
-      health: 100;
-      level: 1;
-      XP: 0;
-    }, createDungeon(1)); // this creates a dependency between initializeState and createDungeon
+    return makeNewGame();
   }
   switch(action.type){
-    case: "MOVE_LEFT":
+    case "MOVE_LEFT":
       return movePlayerTo(state, state.player.x - 1, state.player.y); //movePlayerTo does logic to change state
-    case: "MOVE_UP":
+    case "MOVE_UP":
       return movePlayerTo(state, state.player.x, state.player.y + 1); //movePlayerTo does work to change state
-    case: "MOVE_RIGHT":
+    case "MOVE_RIGHT":
       return movePlayerTo(state, state.player.x + 1, state.player.y); //movePlayerTo does work to change state
-    case: "MOVE_DOWN":
+    case "MOVE_DOWN":
       return movePlayerTo(state, state.player.x, state.player.y - 1); //movePlayerTo does work to change state
+    case "RESTART":
+      //prompt a Game Over screen that fades to new game
+      return makeNewGame();
     default:
       return state;
     //I don't think I need these anymore since i wrote normal methods that do this:
@@ -66,11 +64,28 @@ export function dungeonReducer(state, action){
     //   return (...state, (power: action.power));
   }
 }
+function makeNewGame(){
+  let newState = initializeState({
+    weapon: "Stick",
+    health: 100,
+    level: 1,
+    XP: 0,
+  }, createDungeon(1)); // this creates a dependency between initializeState and createDungeon
+  console.log("initialized state in makeNewGame, value is:", newState);
+  return newState;
+}
 function initializeState(player, dungeon){
-  player.x = dungeon.player.x;
-  player.y = dungeon.player.y;
+  console.log("In initializeState, dungeon and player are:", dungeon, player);
+  let newPlayer = Object.assign({}, player);
+  newPlayer.x = dungeon.player.x;
+  newPlayer.y = dungeon.player.y;
   //player.id = dungeon.player.id;
-  return Object.assign({}, ...dungeon, player);
+  let newState = {};
+  Object.keys(dungeon).forEach( (key) => {
+    newState[key] = key === "player" ? newPlayer : dungeon[key];
+  });
+  console.log("In initializeState, newState is:", newState);
+  return newState;
   //return Object.assign({}, player, ...dungeon); would the dungeon.player overwrite all of player's properties or just x and y?
 }
 function gainXP(player, XP){
@@ -82,30 +97,34 @@ function gainXP(player, XP){
   return player;
 }
 function combat(state, key){
-  player = {...state.player};
+  let player = Object.assign({}, state.player);
   player.health -= state.enemies[key].damage;
   if (player.health <= 0){
     //TODO Game over
+    //Death Animation
+    //Game Over Screen
+      //return makeNewGame()
   }
-  enemies = {...state.enemies};
+  let enemies = Object.assign({}, state.enemies);
   enemies[key].health -= randomize(playerDamage(player.weapon, player.level));
   if (enemies[key].health <= 0){
     player = gainXP(player, enemies[key].XP);
     delete enemies[key];
   }
-  return {...state, enemies, player};
+  return Object.assign({}, state, enemies, player);
 }
 function pickUpHealth(state, key){
-  let player = {...state.player};
+  let player = Object.assign({}, state.player);
   player.health += state.health[action.key].health;
-  health = {...state.health};
+  let health =  Object.assign({}, state.health);
   delete health[action.key];
-  return {...state, health, player};
+  return Object.assign({}, state, health, player);
 }
 function pickUpWeapon(state, key){ //on gameboard
-  let player = {...state.player};
+  let player = Object.assign({}, state.player);
+  //let player = Object.assign({}, state.player);
   player.weapon = state.weapon[2];
-  return {...state, {weapon: []}, player};
+  return Object.assign({}, state, {weapon: []}, player);
 }
 function playerDamage(weapon, level){
   //calculate damage
@@ -158,29 +177,29 @@ function itemAt(state, key){
 }
 function movePlayerTo(state, x, y){ //should only be called in reponse to a key input
   //returns if player should move
-  if (!isInBounds(state.walls, x, y){
+  if (!isInBounds(state.walls, x, y)){
     return state;
   }
   let key = `_${x}_${y}`;
   let itemAt = itemAt(state, key);
+  let newState = {};
+  let player = {};
   switch(itemAt){
     case "ENEMY":
       return combat(state, key);
     case "HEALTH":
-      let newState = {};
-      let player = {...state.player, {x, y}};
       newState = pickUpHealth(state, key);
+      player = Object.assign(newState.player, {x, y});
       return newState;
     case "WEAPON":
-      let newState = {};
-      let player = {...state.player, {x, y}};
       newState = pickUpWeapon(state, key);
-      return {...newState, player};
+      player = Object.assign(newState.player, {x, y});
+      return Object.assign(newState, player);
     case "EXIT":
       return initializeState(state.player, createDungeon(state.level + 1));;
     default:
-      let player = {...state.player, {x, y}};
-      return {...state, player};
+      player = Object.assign({}, state.player, {x, y});
+      return Object.assign({}, state, player);
   }
 }
 
