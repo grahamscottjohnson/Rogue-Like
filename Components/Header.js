@@ -4,6 +4,7 @@ import React from "react";
 
 export class Header extends React.Component{
   render(){
+    //console.log("render Header");
     return(
       <div>
         <span className = "info">Dungeon: {this.props.dungeon}</span>

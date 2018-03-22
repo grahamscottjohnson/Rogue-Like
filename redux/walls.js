@@ -50,7 +50,7 @@
 export function createDungeon(level){
   //TODO if level 4, create boss, don't create exit
   let walls = createWalls();
-  console.log("In createDungeon, walls succesful, value is:", walls);
+  //console.log("In createDungeon, walls succesful, value is:", walls);
   let collisions = {};
   let temp = populateExit(walls.rooms, collisions);
   const exit = temp[0];
@@ -83,8 +83,8 @@ function populateHealth(rooms, collisions){ // collisions is an object of keys t
     const roomNum = Math.floor(Math.random() * rooms.length);
     const position = generatePosition(rooms[roomNum], collisions);
     collisions[position.id] = true;
-    health[position.id] = Object.assign(position, health: 10);
-    console.log("populateHealth: health object:", health[position.id]);
+    health[position.id] = Object.assign(position, {health: 10});
+    //console.log("populateHealth: health object:", health[position.id]);
   }
   return [health, collisions]; // need to return collisions or deal with it somehow
 }
@@ -257,7 +257,7 @@ function appendNewRooms(dungeon, numNewRooms){ // mutates dungeon
   //check numNewRooms
   if (numNewRooms === 0){
     delete dungeon.emptyDoors;
-    console.log("dungeon creation succesful, dungeon is:", dungeon);
+    //console.log("dungeon creation succesful, dungeon is:", dungeon);
     return dungeon;
   }
   else{

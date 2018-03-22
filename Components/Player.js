@@ -9,7 +9,7 @@ export const Player = (props) => {
 export class Player extends React.Component{
   render(){
     return (
-      <div className = "player" style = {{bottom: this.props.bottom + "px", right: this.props.right + "px"}}></div>
+      <div className = "player" style = {{bottom: this.props.bottom + "px", left: this.props.left + "px"}}></div>
     )
   }
 }

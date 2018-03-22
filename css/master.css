@@ -12,17 +12,19 @@ body{
   width: 1000px;
   height: 750px;
   position: relative;
+  z-index: -2;
 }
 .center{
-  width: 0;
-  height: 0;
+  width: 0px;
+  height: 0px;
   position: absolute;
-  top: 500px;
-  left: 375px;
+  top: 375px;
+  left: 500px;
 }
 .player, .health, .enemy, .weapon, .exit{
   width: 10px;
   height: 10px;
+  position: absolute;
 }
 .player{
   background-color: blue;
@@ -30,6 +32,7 @@ body{
 .tile{
   background-color: #ccc;
   z-index: -1;
+  position: absolute;
 }
 .health{
   background-color: green;

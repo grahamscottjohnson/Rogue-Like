@@ -25,21 +25,22 @@ PLAN:
 */
 //TODO react Components
 import { createStore } from "redux";
-import { React } from "react";
-import { ReactDOM } from "react-dom";
+import React from "react";
+import ReactDOM from "react-dom";
 import { dungeonReducer } from "./../redux/mainDungeon.js";
 import { App } from "./../Components/App.js";
 
 const store = createStore(dungeonReducer);
 const render = () => {
-  console.log("render called");
+  console.log("render called, state is:", store.getState());
   ReactDOM.render(<App state = {store.getState()}/>, document.getElementById("root"));
 }
 store.subscribe(render);
+render();
 
 window.addEventListener("keydown", (event) => {
   console.log("In window event in index.js, event is:", event);
-  action = {type: ""};
+  let action = {type: ""};
   switch(event.keyCode){ //TODO
     case 37:
     action.type = "MOVE_LEFT";

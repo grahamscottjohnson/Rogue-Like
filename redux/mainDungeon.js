@@ -71,11 +71,11 @@ function makeNewGame(){
     level: 1,
     XP: 0,
   }, createDungeon(1)); // this creates a dependency between initializeState and createDungeon
-  console.log("initialized state in makeNewGame, value is:", newState);
+  //console.log("initialized state in makeNewGame, value is:", newState);
   return newState;
 }
 function initializeState(player, dungeon){
-  console.log("In initializeState, dungeon and player are:", dungeon, player);
+  //console.log("In initializeState, dungeon and player are:", dungeon, player);
   let newPlayer = Object.assign({}, player);
   newPlayer.x = dungeon.player.x;
   newPlayer.y = dungeon.player.y;
@@ -84,7 +84,7 @@ function initializeState(player, dungeon){
   Object.keys(dungeon).forEach( (key) => {
     newState[key] = key === "player" ? newPlayer : dungeon[key];
   });
-  console.log("In initializeState, newState is:", newState);
+  //console.log("In initializeState, newState is:", newState);
   return newState;
   //return Object.assign({}, player, ...dungeon); would the dungeon.player overwrite all of player's properties or just x and y?
 }
@@ -153,7 +153,7 @@ function randomize(num){
 }
 function isInBounds(walls, x, y){ //this approach is inentionally trying to not optimize searching and be lazy. Should I be worried about that?
   return walls.some( (wall) => { //assumes a sorted point
-    return x > wall[0][0] && x < wall[0][1] && y > wall [1][0] && y < wall[1][1];
+    return x >= wall[0][0] && x < wall[0][1] && y >= wall [1][0] && y < wall[1][1];
   })
 }
 function itemAt(state, key){
@@ -184,6 +184,7 @@ function movePlayerTo(state, x, y){ //should only be called in reponse to a key 
   let itemAt = itemAt(state, key);
   let newState = {};
   let player = {};
+  console.log("itemAt in movePlayerTo returned:", itemAt);
   switch(itemAt){
     case "ENEMY":
       return combat(state, key);
