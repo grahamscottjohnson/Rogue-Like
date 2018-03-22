@@ -1,4 +1,4 @@
-/*
+/*STATE:
   player:
     x:
     y:
@@ -29,8 +29,60 @@
   walls: [], //ex: [[[x1, x2], [y1, y2]], ...]
   level: number
 */
+
+/*PLAN:
+
+  Phase 1: NEEDS TESTING
+  player can move,--> player object
+    can't run into wall --> wall object
+  pick up objects, --> health and weapons objects
+  fight enemies, -- enemies object
+    able to kill enemies
+    randomness in attacks
+    Gain XP
+  all of which change a property in player
+
+  Phase 2: NEEDS TESTING
+  dungeon gets randomized
+    collection of divs/rectangles
+    Boss on level 4
+  player able to die, // TODO
+  move to next level
+
+  Phase 3:
+  add darkness
+    opacity
+  center screen on player
+
+
+*/
 import { createDungeon } from "./walls.js";
 
+//Most important TODO: object assignment in movePlayerTo
+
+export function setControls(store){
+  window.addEventListener("keydown", (event) => {
+    console.log("In window event in index.js, event is:", event);
+    let action = {type: ""};
+    switch(event.keyCode){ //TODO
+      case 37:
+      action.type = "MOVE_LEFT";
+      break;
+      case 38:
+      action.type = "MOVE_UP";
+      break;
+      case 39:
+      action.type = "MOVE_RIGHT";
+      break;
+      case 40:
+      action.type = "MOVE_DOWN";
+      break;
+      default:
+      return null;
+    }
+    store.dispatch(action);
+  });
+}
 export function dungeonReducer(state, action){
   if (state === undefined){
     return makeNewGame();
@@ -115,10 +167,10 @@ function combat(state, key){
 }
 function pickUpHealth(state, key){
   let player = Object.assign({}, state.player);
-  player.health += state.health[action.key].health;
+  player.health += state.health[key].health;
   let health =  Object.assign({}, state.health);
-  delete health[action.key];
-  return Object.assign({}, state, health, player);
+  delete health[key];
+  return Object.assign({}, state, health, player); // TODO (check for other similar functions) does this return the right state? your combining the whole state and health, does that make health a property or not?
 }
 function pickUpWeapon(state, key){ //on gameboard
   let player = Object.assign({}, state.player);
@@ -152,45 +204,50 @@ function randomize(num){
   return Math.round(num * (1 + (.3 * Math.random() - .15))); // within 15% of num
 }
 function isInBounds(walls, x, y){ //this approach is inentionally trying to not optimize searching and be lazy. Should I be worried about that?
+  //console.log("in isInBounds, walls is: ", walls);
   return walls.some( (wall) => { //assumes a sorted point
     return x >= wall[0][0] && x < wall[0][1] && y >= wall [1][0] && y < wall[1][1];
   })
 }
 function itemAt(state, key){
-  let item = state.enemies[key];
-  if (item){
-    return "ENEMY";
+  console.log("in ItemAt, state and key are:", state, key);
+  let item = "EMPTY";
+  if (state.enemies[key]){
+    item = "ENEMY";
   }
-  item = state.health[key];
-  if (item){
-    return "HEALTH";
+  else if (state.health[key]){
+    item = "HEALTH";
   }
-  item = [state.weapon[0], state.weapon[1]] === [Number(key.charAt(1)), Number(key.charAt(3))] ? true : false;
-  if (item){
-    return "WEAPON";
+  else if ([state.weapon[0], state.weapon[1]] === [Number(key.charAt(1)), Number(key.charAt(3))]){
+    item = "WEAPON";
   }
-  item = [state.exit[0], state.exit[1]] === [Number(key.charAt(1)), Number(key.charAt(3))] ? true : false;
-  if (item){
-    return "EXIT";
+  else if ([state.exit[0], state.exit[1]] === [Number(key.charAt(1)), Number(key.charAt(3))]){
+    item = "EXIT";
   }
-  return null;
+  else{
+    console.log("No Item found in itemAt");
+  }
+  return item;
 }
 function movePlayerTo(state, x, y){ //should only be called in reponse to a key input
   //returns if player should move
   if (!isInBounds(state.walls, x, y)){
+    console.log("destination is not in bounds");
     return state;
   }
+  console.log("test make key:");
   let key = `_${x}_${y}`;
-  let itemAt = itemAt(state, key);
+  console.log("moving player in movePlayerTo, state and key are", state, key);
+  let item = itemAt(state, key);
   let newState = {};
   let player = {};
-  console.log("itemAt in movePlayerTo returned:", itemAt);
-  switch(itemAt){
+  console.log("itemAt in movePlayerTo returned:", item);
+  switch(item){
     case "ENEMY":
       return combat(state, key);
     case "HEALTH":
       newState = pickUpHealth(state, key);
-      player = Object.assign(newState.player, {x, y});
+      player = Object.assign({}, newState.player, {x, y});
       return newState;
     case "WEAPON":
       newState = pickUpWeapon(state, key);
@@ -198,9 +255,21 @@ function movePlayerTo(state, x, y){ //should only be called in reponse to a key 
       return Object.assign(newState, player);
     case "EXIT":
       return initializeState(state.player, createDungeon(state.level + 1));;
+    case "EMPTY":
+      player = Object.assign({}, state.player);
+      delete player.x;
+      player.x = x;
+      delete player.y;
+      player.y = y;
+      console.log("in EMPTY in movePlayerTo, test of deletion is:", state.player.x, player.x, state.player.y, player.y);
+      //player = Object.assign({}, state.player, {x, y});
+      newState = Object.assign({}, state);
+      newState.player = player;
+      //TODO make a new test file testing all this object assignment stuff. Draw a picture of it.
+      return newState;
     default:
-      player = Object.assign({}, state.player, {x, y});
-      return Object.assign({}, state, player);
+      console.log("ERROR: item not found, item is:", item);
+      return state
   }
 }
 

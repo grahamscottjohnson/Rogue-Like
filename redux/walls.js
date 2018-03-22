@@ -4,7 +4,6 @@
   doors: []
   emptyDoors: []
 */
-
 /*
   create Room
     min/max size
@@ -18,8 +17,6 @@
     items can't overlap
     spawn player as well
 */
-
-
 /*
   create a base room with empty doors
     (createRoom)
@@ -36,7 +33,6 @@
     (appendNewRooms)
   Dungeon complete, convert it into something the reducer/player.js file can use
 */
-
 /*
   Populating a dungeon with items
 
@@ -46,7 +42,6 @@
       avoid collisions
     Spawn Exit and weapon first, then enemies then health
 */
-
 export function createDungeon(level){
   //TODO if level 4, create boss, don't create exit
   let walls = createWalls();
@@ -127,11 +122,14 @@ function populateExit(rooms, collisions){
   return [[position.x, position.y], collisions];
 }
 function generatePosition(room, collisions){
-  for(let i = 0; i < 4; i += 1){
-    const x = Math.floor((room[0][1] - room[0][0] + 1) * Math.random()) + room[0][0];
-    const y = Math.floor((room[1][1] - room[1][0] + 1) * Math.random()) + room[1][0];
+  for(let i = 0; i < 5; i += 1){
+    const x = Math.floor((room[0][1] - room[0][0]) * Math.random()) + room[0][0];
+    const y = Math.floor((room[1][1] - room[1][0]) * Math.random()) + room[1][0];
     const id = `_${x}_${y}`;
     if (!collisions[id] || i === 4) {
+      if (i == 4){
+        console.log("WARNING: items overlapping at: " + id);
+      }
       return {x, y, id};
     }
   }
@@ -243,10 +241,16 @@ function appendNewRooms(dungeon, numNewRooms){ // mutates dungeon
         //console.log("In appendNewRooms, room and result are", room, result);
         return isOverlapping(room, result);
       })){
+        console.log("overlapping rooms in appendNewRooms");
         // don't add new doors to this weirdly overlapping room, but the room itself is probably fine.
       }
       else{
-        newDoors.push(...addNewDoors(result[0][0], result[0][1], result[1][0], result[1][1], door[2]));
+        //console.log("in appendNewRooms, newDoors before and after spread operater yield:", newDoors);
+        let temp = addNewDoors(result[0][0], result[0][1], result[1][0], result[1][1], door[2]);
+        temp.forEach( (val) => {
+          newDoors.push(val);
+        })
+        //console.log(newDoors);
       }
       //once room is all good, add room and door to dungeon and reduce counter
       dungeon.rooms.push(result);
@@ -268,20 +272,43 @@ function appendNewRooms(dungeon, numNewRooms){ // mutates dungeon
 function addAdjoiningRoom(door){
   const xWidth = Math.ceil(6*Math.random()) + 3;
   const yWidth = Math.ceil(6*Math.random()) + 3;
-  const offset = Math.ceil(6*Math.random()) + 3;
+  //const offset = Math.floor(xWidth*Math.random());
+  let offsetX = Math.floor(xWidth*Math.random());
+  let offsetY = Math.floor(yWidth*Math.random());
+  let startX = door[0][0];
+  let endX = startX + xWidth;
+  let startY = door[1][0];
+  let endY = startY + yWidth;
   switch(door[2]){
     case "north":
-      return addNewRoom(door[0][0] - offset, door[0][0] + xWidth - offset, door[1][1], door[1][1] + yWidth);
+      startX -= offsetX;
+      endX -= offsetX;
+      startY += 1; // needed to compensate for door
+      endY += 1;
+      break;
     case "south":
-      return addNewRoom(door[0][0] - offset, door[0][0] + xWidth - offset, door[1][0] - yWidth, door[1][0]);
+      startX -= offsetX;
+      endX -= offsetX;
+      startY -= yWidth; //want to move room down
+      endY -= yWidth;
+      break;
     case "east":
-      return addNewRoom(door[0][1], door[0][1] + xWidth, door[1][0] - offset, door[1][0] + yWidth - offset);
+      startY -= offsetY;
+      endY -= offsetY;
+      startX += 1;
+      endX += 1;
+      break;
     case "west":
-      return addNewRoom(door[0][0] - xWidth, door[0][0], door[1][0] - offset, door[1][0] + yWidth - offset);
+      startY -= offsetY;
+      endY -= offsetY;
+      startX -= xWidth;
+      endX -= xWidth;
+      break;
     default:
-      //console.log("Error: in addAdjoiningRoom: door[2] was not recognized. Seed was", xWidth, yWidth, offset, door);
+      console.log("Error: in addAdjoiningRoom: door[2] was not recognized. Seed was", xWidth, yWidth, door, door[2]);
       return undefined;
   }
+  return addNewRoom(startX, endX, startY, endY);
 }
 function isOverlapping(a, b){ //rooms
   return ((a[0][0] <= b[0][0] && a[0][1] >= b[0][0]) && (a[1][0] <= b[1][0] && a[1][1] >= b[1][0]))
