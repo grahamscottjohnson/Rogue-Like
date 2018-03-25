@@ -47,8 +47,19 @@ export function createDungeon(level){
   let walls = createWalls();
   //console.log("In createDungeon, walls succesful, value is:", walls);
   let collisions = {};
-  let temp = populateExit(walls.rooms, collisions);
-  const exit = temp[0];
+  let temp = 0;
+  let exit = [];
+  let boss = {};
+  if (level === 4){
+    temp = generateBoss(walls.rooms, collisions);
+    boss = temp[0];
+    collisions = temp[1];
+  }
+  else{
+    temp = populateExit(walls.rooms, collisions);
+    exit = temp[0];
+    collisions = temp[1];
+  }
   collisions = temp[1];
   temp = placePlayer(walls.rooms, collisions);
   const player = temp[0];
@@ -63,7 +74,37 @@ export function createDungeon(level){
   const enemies = temp[0];
   //convert walls into something the reducer/player.js file can use
   walls = convertDungeon(walls);
-  return {player, enemies, health, weapon, exit, walls, level};
+  return {player, enemies, health, weapon, exit, walls, level, boss};
+}
+function generateBoss(rooms, collisions){
+  let boss = {};
+  boss.health = 125;
+  boss.damage = 40;
+  const roomNum = Math.floor(Math.random() * rooms.length);
+  const position = generateBossPosition(rooms[roomNum], collisions);
+  position.id.forEach( (place) => {
+    collisions[place] = true;
+  })
+  const key = position.id[0].split("_");
+  boss.id = position.id;
+  boss.x = Number(key[1]);
+  boss.y = Number(key[2]);
+  return [boss, collisions];
+}
+function generateBossPosition(room, collisions){
+  for(let i = 0; i < 5; i += 1){
+    const x = Math.floor((room[0][1] - room[0][0] - 1) * Math.random()) + room[0][0];
+    const y = Math.floor((room[1][1] - room[1][0] - 1) * Math.random()) + room[1][0];
+    const id = [`_${x}_${y}`, `_${x+1}_${y}`, `_${x}_${y+1}`, `_${x+1}_${y+1}`];
+    if (!id.some( (key) => {
+      return collisions[key];
+    }) || i === 4) {
+      if (i == 4){
+        console.log("WARNING: Boss overlapping at: " + id);
+      }
+      return {x, y, id};
+    }
+  }
 }
 function placePlayer(rooms, collisions){
   const roomNum = Math.floor(Math.random() * rooms.length);
@@ -136,7 +177,7 @@ function generatePosition(room, collisions){
 }
 function createWalls(){
   dungeon = createBaseRoom(0, Math.ceil(6*Math.random()) + 3, 0, Math.ceil(6*Math.random()) + 3);
-  let numRooms = Math.ceil(6*Math.random()) + 6;
+  let numRooms = Math.ceil(8*Math.random()) + 8;
   dungeon = appendNewRooms(dungeon, numRooms - 1);
   return dungeon;
 }
@@ -184,8 +225,9 @@ function addNewDoors(startX, endX, startY, endY){
   let x = endX - startX;
   let y = endY - startY;
   let perim = 2 * x + 2 * y;
-  let numDoors = Math.ceil(2 * Math.random());
-  for(let i = 0; i < numDoors; i += 1){
+  let numDoors = Math.ceil(3 * Math.random());
+  let failedAttempts = 0;
+  for(let i = 0; i < numDoors && failedAttempts < 10; i += 1){
     let position = Math.floor(perim * Math.random());
     if (position < x){
       if (!badDoors.some( (val) => {
@@ -193,6 +235,10 @@ function addNewDoors(startX, endX, startY, endY){
       })){
         result.push([[startX + position, startX + position + 1], [startY - 1, startY], "south"]);
         badDoors.push("north");
+      }
+      else{
+        failedAttempts += 1;
+        i -= 1;
       }
     }
     else if (position < 2 * x) {
@@ -202,6 +248,10 @@ function addNewDoors(startX, endX, startY, endY){
         result.push([[startX + position - x, startX + position - x + 1], [endY, endY + 1], "north"]);
         badDoors.push("south");
       }
+      else{
+        failedAttempts += 1;
+        i -= 1;
+      }
     }
     else if (position < 2 * x + y) {
       if (!badDoors.some( (val) => {
@@ -210,6 +260,10 @@ function addNewDoors(startX, endX, startY, endY){
         result.push([[endX, endX + 1], [startY + position - 2 * x, startY  + position - 2 * x + 1], "east"]);
         badDoors.push("west");
       }
+      else{
+        failedAttempts += 1;
+        i -= 1;
+      }
     }
     else{
       if (!badDoors.some( (val) => {
@@ -217,6 +271,10 @@ function addNewDoors(startX, endX, startY, endY){
       })){
         result.push([[startX - 1, startX], [startY + position - 2 * x - y, startY  + position - 2 * x - y + 1], "west"]);
         badDoors.push("east");
+      }
+      else{
+        failedAttempts += 1;
+        i -= 1;
       }
     }
   }
@@ -231,7 +289,7 @@ function appendNewRooms(dungeon, numNewRooms){ // mutates dungeon
   if (!dungeon.emptyDoors || dungeon.emptyDoors.length === 0){ // we expect emptyDoors to be not empty, but if it is, lets handle it here;
     console.log("Error: emptyDoors should not be empty in appendNewRooms in walls.js. dungeon was: ", dungeon);
     delete dungeon.emptyDoors;
-    return dungeon; //TODO FIX ERROR
+    return dungeon;
   }
   dungeon.emptyDoors.forEach( (door, index) => {
     if (numNewRooms !== 0){

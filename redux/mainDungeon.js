@@ -56,13 +56,13 @@
 
 
 */
-import { createDungeon } from "./walls.js";
 
-//Most important TODO: object assignment in movePlayerTo
+//TODO: death, win, darkness
+import { createDungeon } from "./walls.js";
 
 export function setControls(store){
   window.addEventListener("keydown", (event) => {
-    console.log("In window event in index.js, event is:", event);
+    //console.log("In window event in index.js, event is:", event);
     let action = {type: ""};
     switch(event.keyCode){ //TODO
       case 37:
@@ -142,15 +142,15 @@ function initializeState(player, dungeon){
 }
 function gainXP(player, XP){
   player.XP += XP;
-  if (player.XP >= player.level * 100){ // check if level UP
-    player.XP -= player.level * 100;
+  if (player.XP >= player.level * 50){ // check if level UP
+    player.XP -= player.level * 50;
     player.level += 1;
   }
   return player;
 }
 function combat(state, key){
   let player = Object.assign({}, state.player);
-  player.health -= state.enemies[key].damage;
+  player.health -= randomize(state.enemies[key].damage);
   if (player.health <= 0){
     //TODO Game over
     //Death Animation
@@ -163,20 +163,50 @@ function combat(state, key){
     player = gainXP(player, enemies[key].XP);
     delete enemies[key];
   }
-  return Object.assign({}, state, enemies, player);
+  let newState = Object.assign({}, state);
+  newState.player = player;
+  newState.enemies = enemies;
+  return newState;
+}
+function combatBoss(state){
+  let player = Object.assign({}, state.player);
+  player.health -= randomize(state.boss.damage);
+  if (player.health <= 0){
+    console.log("Lose!");
+    //TODO Game over
+    //Death Animation
+    //Game Over Screen
+      //return makeNewGame()
+  }
+  let boss = Object.assign({}, state.boss);
+  boss.health -= randomize(playerDamage(player.weapon, player.level));
+  if (boss.health <= 0){
+    console.log("Win!");
+    //TODO: Win Game!
+  }
+  let newState = Object.assign({}, state);
+  newState.player = player;
+  newState.boss = boss;
+  return newState;
 }
 function pickUpHealth(state, key){
   let player = Object.assign({}, state.player);
   player.health += state.health[key].health;
   let health =  Object.assign({}, state.health);
   delete health[key];
-  return Object.assign({}, state, health, player); // TODO (check for other similar functions) does this return the right state? your combining the whole state and health, does that make health a property or not?
+  let newState = Object.assign({}, state);
+  newState.player = player;
+  newState.health = health;
+  return newState;
 }
-function pickUpWeapon(state, key){ //on gameboard
+function pickUpWeapon(state){ //on gameboard
   let player = Object.assign({}, state.player);
   //let player = Object.assign({}, state.player);
   player.weapon = state.weapon[2];
-  return Object.assign({}, state, {weapon: []}, player);
+  let newState = Object.assign({}, state);
+  newState.weapon = [];
+  newState.player = player;
+  return newState;
 }
 function playerDamage(weapon, level){
   //calculate damage
@@ -209,8 +239,12 @@ function isInBounds(walls, x, y){ //this approach is inentionally trying to not 
     return x >= wall[0][0] && x < wall[0][1] && y >= wall [1][0] && y < wall[1][1];
   })
 }
+function parseKey(key){
+  key = key.split("_");
+  return [Number(key[1]), Number(key[2])];
+}
 function itemAt(state, key){
-  console.log("in ItemAt, state and key are:", state, key);
+  console.log("in ItemAt, boss is:", state.boss);
   let item = "EMPTY";
   if (state.enemies[key]){
     item = "ENEMY";
@@ -218,11 +252,18 @@ function itemAt(state, key){
   else if (state.health[key]){
     item = "HEALTH";
   }
-  else if ([state.weapon[0], state.weapon[1]] === [Number(key.charAt(1)), Number(key.charAt(3))]){
+  else if ( state.weapon[0] === parseKey(key)[0] && state.weapon[1] === parseKey(key)[1] ){
     item = "WEAPON";
   }
-  else if ([state.exit[0], state.exit[1]] === [Number(key.charAt(1)), Number(key.charAt(3))]){
+  else if ( state.exit[0] === parseKey(key)[0] && state.exit[1] === parseKey(key)[1] ){
     item = "EXIT";
+  }
+  else if ( state.boss.id ){
+    if (state.boss.id.some( (fat) => {
+      return fat === key;
+    })){
+      item = "BOSS";
+    }
   }
   else{
     console.log("No Item found in itemAt");
@@ -232,36 +273,38 @@ function itemAt(state, key){
 function movePlayerTo(state, x, y){ //should only be called in reponse to a key input
   //returns if player should move
   if (!isInBounds(state.walls, x, y)){
-    console.log("destination is not in bounds");
+    //console.log("destination is not in bounds");
     return state;
   }
-  console.log("test make key:");
   let key = `_${x}_${y}`;
-  console.log("moving player in movePlayerTo, state and key are", state, key);
   let item = itemAt(state, key);
   let newState = {};
   let player = {};
-  console.log("itemAt in movePlayerTo returned:", item);
+  //console.log("itemAt in movePlayerTo returned:", item);
   switch(item){
     case "ENEMY":
       return combat(state, key);
     case "HEALTH":
       newState = pickUpHealth(state, key);
       player = Object.assign({}, newState.player, {x, y});
+      newState.player = player;
       return newState;
     case "WEAPON":
-      newState = pickUpWeapon(state, key);
-      player = Object.assign(newState.player, {x, y});
-      return Object.assign(newState, player);
+      newState = pickUpWeapon(state);
+      player = Object.assign({}, newState.player, {x, y});
+      newState.player = player;
+      return newState;
     case "EXIT":
-      return initializeState(state.player, createDungeon(state.level + 1));;
+      return initializeState(state.player, createDungeon(state.level + 1));
+    case "BOSS":
+      return combatBoss(state);
     case "EMPTY":
       player = Object.assign({}, state.player);
-      delete player.x;
+      //delete player.x;
       player.x = x;
-      delete player.y;
+      //delete player.y;
       player.y = y;
-      console.log("in EMPTY in movePlayerTo, test of deletion is:", state.player.x, player.x, state.player.y, player.y);
+      //console.log("in EMPTY in movePlayerTo, test of deletion is:", state.player.x, player.x, state.player.y, player.y);
       //player = Object.assign({}, state.player, {x, y});
       newState = Object.assign({}, state);
       newState.player = player;
