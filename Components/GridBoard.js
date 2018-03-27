@@ -13,6 +13,21 @@ export class GridBoard extends React.Component{
   offsetY(num){ //add y because grid points down but game points up
     return 30 - num + this.props.player.y;
   }
+  isInBounds(){
+    //detect if in the gridbox
+
+  }
+  isInLight(x, y){
+    //detect if component should be displayed by detecting it's x and y values
+    //
+    let a = x - this.props.player.x + .5;
+    let b = y - this.props.player.y + .5;
+    return Math.sqrt(a*a + b*b) < 6;
+
+
+
+    //return modified display point
+  }
   render(){
     //console.log("convertStateToDisplay test is: ", this.convertStateToDisplay(10));
     const walls = this.props.walls.map( (wall) => {

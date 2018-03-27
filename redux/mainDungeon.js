@@ -28,7 +28,11 @@
   exit: [x,y]
   walls: [], //ex: [[[x1, x2], [y1, y2]], ...]
   level: number
+  dead: false,
+  winner: false,
 */
+
+//TODO: modify state when dead or win to let APP know what screen to display
 
 /*PLAN:
 
@@ -57,7 +61,7 @@
 
 */
 
-//TODO: death, win, darkness
+//TODO: darkness, fix boundary error, fix ghost room error
 import { createDungeon } from "./walls.js";
 
 export function setControls(store){
@@ -136,6 +140,8 @@ function initializeState(player, dungeon){
   Object.keys(dungeon).forEach( (key) => {
     newState[key] = key === "player" ? newPlayer : dungeon[key];
   });
+  newState.dead = false;
+  newState.winner = false;
   //console.log("In initializeState, newState is:", newState);
   return newState;
   //return Object.assign({}, player, ...dungeon); would the dungeon.player overwrite all of player's properties or just x and y?
@@ -148,14 +154,35 @@ function gainXP(player, XP){
   }
   return player;
 }
+// function makeBlankState(){
+//   return {
+//     player: {},
+//     enemies: {},
+//     health: {},
+//     weapon: [],
+//     walls: [],
+//     exit: [],
+//     level: 1,
+//     dead: false,
+//     winner: false,
+//   }
+// }
+function loseGame(state){
+  let newState = Object.assign({}, state);
+  newState.dead = true;
+  //disable key inputs?
+  return newState;
+}
+function winGame(state){
+  let newState = Object.assign({}, state);
+  newState.winner = true;
+  return newState;
+}
 function combat(state, key){
   let player = Object.assign({}, state.player);
   player.health -= randomize(state.enemies[key].damage);
   if (player.health <= 0){
-    //TODO Game over
-    //Death Animation
-    //Game Over Screen
-      //return makeNewGame()
+    return loseGame(state);
   }
   let enemies = Object.assign({}, state.enemies);
   enemies[key].health -= randomize(playerDamage(player.weapon, player.level));
@@ -173,16 +200,13 @@ function combatBoss(state){
   player.health -= randomize(state.boss.damage);
   if (player.health <= 0){
     console.log("Lose!");
-    //TODO Game over
-    //Death Animation
-    //Game Over Screen
-      //return makeNewGame()
+    return loseGame(state);
   }
   let boss = Object.assign({}, state.boss);
   boss.health -= randomize(playerDamage(player.weapon, player.level));
   if (boss.health <= 0){
     console.log("Win!");
-    //TODO: Win Game!
+    return winGame(state);
   }
   let newState = Object.assign({}, state);
   newState.player = player;
