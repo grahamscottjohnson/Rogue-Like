@@ -35,7 +35,7 @@ export class App extends React.Component{
       <div>
         {!screen[0] && <Header XP = {this.props.state.player.XP} health = {this.props.state.player.health} level = {this.props.state.player.level} dungeon = {this.props.state.level} weapon = {this.props.state.player.weapon}/> }
         {!screen[0] && <GridBoard darkMode = {this.state.darkMode} boss = {this.props.state.boss} walls = {this.props.state.walls} player = {this.props.state.player} enemies = {this.props.state.enemies} health = {this.props.state.health} weapon = {this.props.state.weapon} exit = {this.props.state.exit}/> }
-        {!screen[0] && <button onClick = {this.toggleDarkMode}>Toggle Darkness</button> }
+        {!screen[0] && <button className = "darknessButton" onClick = {this.toggleDarkMode}>Toggle Darkness</button> }
         {screen[0] && <Screen text = {screen[1]} buttonText = "Play Again?" onClick = {() => {
           this.props.store.dispatch({type: "RESTART"});
         }}/> }
