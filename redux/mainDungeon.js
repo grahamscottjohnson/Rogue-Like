@@ -70,16 +70,20 @@ export function setControls(store){
     let action = {type: ""};
     switch(event.keyCode){ //TODO
       case 37:
+      event.preventDefault();
       action.type = "MOVE_LEFT";
       break;
       case 38:
       action.type = "MOVE_UP";
+      event.preventDefault();
       break;
       case 39:
       action.type = "MOVE_RIGHT";
+      event.preventDefault();
       break;
       case 40:
       action.type = "MOVE_DOWN";
+      event.preventDefault();
       break;
       default:
       return null;
